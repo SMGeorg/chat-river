@@ -132,8 +132,8 @@ h1{font-size:42px;margin:0 0 8px;letter-spacing:-.01em}
 .hint{font-size:13px;color:#898781;margin:8px 0 0}
 .foot{color:#52514e;font-size:12px;line-height:1.6;margin-top:20px;max-width:86ch}
 </style></head><body><div class="wrap">
-<p class="eyebrow">река общения · v3</p>
-<h1>Одиннадцать лет — одна река</h1>
+<p class="eyebrow">река общения</p>
+<h1>__YEARS__ — одна река</h1>
 <p class="big">Клик по руслу — поток на передний план. Курсор вдоль течения — сообщения из
 прошлого. «Проплыть» — медленный сплав от истока. «Температура» красит выбранное русло
 эмоциональным балансом той поры: тёплое золото — светлые месяцы, холодная синь — тяжёлые.
@@ -426,6 +426,12 @@ draw(); renderLegend();
 </script></body></html>"""
 
 OUT.mkdir(exist_ok=True)
-(OUT / 'river.html').write_text(page.replace('__DATA__', blob))
+n_years = int(months[-1][:4]) - int(months[0][:4]) + 1
+NUM = {1: 'Один год', 2: 'Два года', 3: 'Три года', 4: 'Четыре года', 5: 'Пять лет',
+       6: 'Шесть лет', 7: 'Семь лет', 8: 'Восемь лет', 9: 'Девять лет', 10: 'Десять лет',
+       11: 'Одиннадцать лет', 12: 'Двенадцать лет'}
+years_ru = NUM.get(n_years, f'{n_years} лет')
+(OUT / 'river.html').write_text(page.replace('__DATA__', blob)
+                                    .replace('__YEARS__', years_ru))
 print(f"записан out/river.html ({(OUT/'river.html').stat().st_size/1024:.0f} КБ); "
       f"доп. чатов в селекторе: {len(extra)}; событий: {len(events)}")
