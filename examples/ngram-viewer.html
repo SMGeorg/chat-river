@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Личный Ngram Viewer</title>
+<style>
+  :root { color-scheme: light dark; }
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --up: #006300;
+    --down: #a03030;
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #eda100;
+    --series-5: #e87ba4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --up: #0ca30c;
+      --down: #e66767;
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --series-3: #199e70;
+      --series-4: #c98500;
+      --series-5: #d55181;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --up: #0ca30c;
+    --down: #e66767;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .viz-root {
+    background: var(--page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  .subtitle { color: var(--text-secondary); font-size: 14px; margin: 0 0 20px; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 22px;
+  }
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .controls input[type=text] {
+    flex: 1 1 280px;
+    font-size: 15px;
+    padding: 9px 12px;
+    border: 1px solid var(--baseline);
+    border-radius: 8px;
+    background: var(--surface-1);
+    color: var(--text-primary);
+  }
+  .controls button {
+    font-size: 14px;
+    padding: 9px 16px;
+    border: 1px solid var(--baseline);
+    border-radius: 8px;
+    background: var(--surface-1);
+    color: var(--text-primary);
+    cursor: pointer;
+  }
+  .controls button:hover { border-color: var(--muted); }
+  .chips { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .chips .hint { color: var(--muted); font-size: 12px; margin-right: 2px; }
+  .chip {
+    font-size: 12px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--muted); color: var(--text-primary); }
+  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); user-select: none; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0 4px; font-size: 13px; }
+  .legend .item { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+  .legend .swatch { width: 10px; height: 10px; border-radius: 3px; }
+  .legend .miss { color: var(--muted); font-style: italic; }
+  #chartbox { position: relative; }
+  #chart { width: 100%; height: auto; display: block; }
+  #tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+    padding: 8px 10px;
+    font-size: 12px;
+    display: none;
+    min-width: 130px;
+    z-index: 5;
+  }
+  #tooltip .tmonth { color: var(--text-secondary); margin-bottom: 4px; font-weight: 600; }
+  #tooltip .trow { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+  #tooltip .trow .swatch { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+  #tooltip .trow .v { margin-left: auto; font-variant-numeric: tabular-nums; }
+  h2 { font-size: 19px; margin: 30px 0 4px; }
+  .h2sub { color: var(--text-secondary); font-size: 13px; margin: 0 0 14px; }
+  .wordcols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  @media (max-width: 720px) { .wordcols { grid-template-columns: 1fr; } }
+  .wordlist h3 { font-size: 15px; margin: 0 0 10px; }
+  .wordlist h3 .dir { font-size: 12px; font-weight: 400; color: var(--muted); }
+  .wrow {
+    display: flex; align-items: center; gap: 10px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--grid);
+    font-size: 14px;
+  }
+  .wrow:last-child { border-bottom: none; }
+  .wrow .rank { color: var(--muted); font-size: 11px; width: 20px; text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+  .wrow .w { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+  .wrow .w:hover { text-decoration: underline; }
+  .wrow .spark { flex: none; }
+  .wrow .ratio { flex: none; width: 58px; text-align: right; font-variant-numeric: tabular-nums; font-size: 12px; }
+  .up .ratio { color: var(--up); }
+  .down .ratio { color: var(--down); }
+  .foot { color: var(--muted); font-size: 12px; line-height: 1.6; margin-top: 26px; }
+  .foot b { color: var(--text-secondary); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="wrap">
+    <h1>Личный Ngram Viewer</h1>
+    <p class="subtitle" id="subtitle"></p>
+
+    <div class="card">
+      <div class="controls">
+        <input type="text" id="q" value="работа, люблю, спасибо"
+               placeholder="слова через запятую; * — по началу слова (лодк*)" spellcheck="false">
+        <button id="go">Построить</button>
+        <label class="toggle"><input type="checkbox" id="smooth" checked> сглаживание 3 мес</label>
+      </div>
+      <div class="chips" id="chips">
+        <span class="hint">примеры:</span>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div id="chartbox">
+        <svg id="chart" viewBox="0 0 960 420" preserveAspectRatio="xMidYMid meet" aria-label="Частота слов по месяцам"></svg>
+        <div id="tooltip"></div>
+      </div>
+    </div>
+
+    <h2>Рождение и смерть слов</h2>
+    <p class="h2sub" id="bd-sub"></p>
+    <div class="card">
+      <div class="wordcols">
+        <div class="wordlist" id="rising"><h3>Взлетевшие <span class="dir">рост частоты</span></h3></div>
+        <div class="wordlist" id="dying"><h3>Угасшие <span class="dir">падение частоты</span></h3></div>
+      </div>
+    </div>
+
+    <p class="foot" id="foot"></p>
+  </div>
+</div>
+
+<script type="application/json" id="data">{"months":["2024-01","2024-02","2024-03","2024-04","2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12"],"totals":[485,509,493,536,454,460,426,550,430,444,507,549,576,484,544,454,513,514,507,569,515,475,632,473],"vocab":{"дела":[[0,17],[1,19],[2,11],[3,20],[4,8],[5,13],[6,13],[7,18],[8,16],[9,15],[10,26],[11,18],[12,15],[13,16],[14,19],[15,15],[16,16],[17,21],[18,12],[19,16],[20,13],[21,14],[22,29],[23,12]],"чай":[[0,13],[1,17],[2,18],[3,15],[4,14],[5,14],[6,13],[7,23],[8,15],[9,14],[10,15],[11,20],[12,13],[13,18],[14,21],[15,14],[16,17],[17,24],[18,15],[19,18],[20,20],[21,15],[22,17],[23,17]],"пожалуйста":[[0,15],[1,15],[2,20],[3,21],[4,23],[5,18],[6,14],[7,13],[8,6],[9,15],[10,17],[11,17],[12,14],[13,18],[14,17],[15,3],[16,15],[17,12],[18,15],[19,13],[20,19],[21,13],[22,25],[23,17]],"книга":[[0,18],[1,15],[2,17],[3,11],[4,15],[5,13],[6,19],[7,26],[8,10],[9,13],[10,14],[11,24],[12,21],[13,16],[14,19],[15,16],[16,15],[17,20],[18,17],[19,19],[20,23],[21,14],[22,19],[23,17]],"проект":[[0,21],[1,12],[2,22],[3,23],[4,15],[5,12],[6,12],[7,28],[8,15],[9,13],[10,11],[11,19],[12,18],[13,17],[14,20],[15,12],[16,12],[17,16],[18,24],[19,17],[20,9],[21,13],[22,18],[23,28]],"кино":[[0,13],[1,16],[2,20],[3,22],[4,9],[5,11],[6,12],[7,17],[8,11],[9,15],[10,33],[11,20],[12,8],[13,13],[14,20],[15,18],[16,25],[17,28],[18,18],[19,21],[20,15],[21,24],[22,24],[23,10]],"ужин":[[0,23],[1,12],[2,18],[3,22],[4,16],[5,21],[6,11],[7,18],[8,17],[9,6],[10,16],[11,13],[12,21],[13,15],[14,15],[15,13],[16,14],[17,20],[18,18],[19,14],[20,22],[21,18],[22,15],[23,17]],"код":[[0,17],[1,14],[2,15],[3,17],[4,10],[5,16],[6,13],[7,19],[8,11],[9,17],[10,17],[11,12],[12,16],[13,20],[14,15],[15,15],[16,13],[17,16],[18,19],[19,21],[20,19],[21,23],[22,20],[23,18]],"бег":[[0,12],[1,23],[2,18],[3,15],[4,16],[5,25],[6,17],[7,11],[8,14],[9,20],[10,17],[11,13],[12,17],[13,17],[14,21],[15,20],[16,14],[17,16],[18,10],[19,20],[20,16],[21,14],[22,27],[23,14]],"тоска":[[0,4],[1,2],[2,2],[3,1],[5,1],[9,2],[11,1],[13,1],[16,2],[17,1],[19,1],[21,1],[23,3]],"лодка":[[0,20],[1,20],[2,22],[3,15],[4,16],[5,12],[6,17],[7,19],[8,16],[9,18],[10,20],[11,25],[12,18],[13,13],[14,23],[15,14],[16,19],[17,14],[18,14],[19,11],[20,16],[21,15],[22,22],[23,20]],"работа":[[0,13],[1,13],[2,10],[3,17],[4,15],[5,23],[6,14],[7,21],[8,16],[9,10],[10,19],[11,22],[12,15],[13,16],[14,19],[15,17],[16,20],[17,13],[18,10],[19,21],[20,15],[21,21],[22,21],[23,19]],"данные":[[0,15],[1,20],[2,8],[3,18],[4,20],[5,15],[6,11],[7,18],[8,18],[9,8],[10,13],[11,20],[12,21],[13,12],[14,22],[15,16],[16,22],[17,17],[18,17],[19,19],[20,21],[21,17],[22,16],[23,13]],"план":[[0,17],[1,12],[2,19],[3,25],[4,21],[5,11],[6,20],[7,16],[8,17],[9,19],[10,11],[11,16],[12,27],[13,15],[14,9],[15,20],[16,10],[17,14],[18,15],[19,17],[20,17],[21,10],[22,22],[23,21]],"совет":[[0,16],[1,20],[2,20],[3,13],[4,26],[5,21],[6,15],[7,33],[8,11],[9,21],[10,18],[11,25],[12,21],[13,13],[14,21],[15,13],[16,11],[17,14],[18,27],[19,13],[20,14],[21,14],[22,16],[23,10]],"идея":[[0,11],[1,12],[2,18],[3,18],[4,12],[5,16],[6,12],[7,16],[8,15],[9,15],[10,12],[11,12],[12,22],[13,16],[14,13],[15,12],[16,24],[17,12],[18,14],[19,20],[20,21],[21,21],[22,25],[23,18]],"ахаха":[[0,18],[1,17],[2,12],[3,17],[4,10],[5,12],[6,15],[7,16],[8,13],[9,10],[10,18],[11,20],[12,20],[13,12],[14,18],[15,9],[16,19],[17,23],[18,16],[19,18],[20,12],[21,17],[22,16],[23,19]],"привет":[[0,22],[1,15],[2,10],[3,24],[4,13],[5,21],[6,12],[7,14],[8,15],[9,18],[10,13],[11,17],[12,25],[13,14],[14,21],[15,9],[16,18],[17,16],[18,12],[19,22],[20,18],[21,18],[22,21],[23,17]],"горы":[[0,15],[1,13],[2,17],[3,21],[4,18],[5,15],[6,11],[7,17],[8,13],[9,20],[10,16],[11,21],[12,25],[13,25],[14,22],[15,13],[16,16],[17,23],[18,16],[19,24],[20,15],[21,16],[22,21],[23,17]],"встреча":[[0,12],[1,17],[2,22],[3,21],[4,18],[5,11],[6,15],[7,20],[8,17],[9,13],[10,17],[11,22],[12,19],[13,18],[14,17],[15,11],[16,16],[17,16],[18,10],[19,19],[20,21],[21,15],[22,27],[23,24]],"счастлив":[[0,4],[1,1],[2,1],[4,6],[5,1],[6,2],[7,5],[8,2],[9,1],[11,5],[13,4],[14,2],[16,1],[17,2],[19,2],[20,1],[21,1],[22,1]],"музыка":[[0,19],[1,15],[2,15],[3,20],[4,15],[5,15],[6,23],[7,19],[8,17],[9,12],[10,28],[11,24],[12,26],[13,20],[14,19],[15,26],[16,23],[17,12],[18,29],[19,22],[20,20],[21,21],[22,24],[23,18]],"рад":[[0,2],[1,1],[2,1],[3,1],[4,1],[5,1],[6,3],[7,3],[8,1],[9,2],[10,1],[11,5],[12,3],[14,3],[15,3],[16,1],[17,1],[18,4],[19,2],[20,3],[21,1]],"как":[[0,17],[1,29],[2,20],[3,15],[4,19],[5,19],[6,22],[7,24],[8,7],[9,17],[10,15],[11,18],[12,15],[13,10],[14,21],[15,16],[16,15],[17,15],[18,29],[19,26],[20,15],[21,16],[22,19],[23,14]],"кайф":[[0,1],[1,1],[2,2],[4,1],[5,3],[6,4],[7,2],[8,2],[9,1],[10,3],[11,3],[12,5],[13,3],[14,3],[15,4],[16,2],[17,2],[18,2],[19,3],[20,4],[21,1],[22,1],[23,1]],"отчет":[[0,16],[1,24],[2,18],[3,23],[4,7],[5,16],[6,12],[7,19],[8,17],[9,26],[10,17],[11,17],[12,27],[13,11],[14,19],[15,20],[16,14],[17,13],[18,24],[19,22],[20,22],[21,15],[22,24],[23,13]],"извини":[[0,16],[1,11],[2,10],[3,18],[4,16],[5,14],[6,8],[7,18],[8,16],[9,13],[10,18],[11,11],[12,20],[13,13],[14,22],[15,12],[16,23],[17,20],[18,17],[19,27],[20,11],[21,21],[22,20],[23,12]],"одиноко":[[0,2],[1,2],[2,3],[3,1],[7,2],[8,3],[10,1],[11,1],[14,1],[15,1],[20,2],[21,1],[23,3]],"фильм":[[0,14],[1,21],[2,17],[3,23],[4,17],[5,19],[6,14],[7,16],[8,15],[9,12],[10,15],[11,19],[12,19],[13,20],[14,20],[15,13],[16,17],[17,25],[18,10],[19,24],[20,21],[21,13],[22,27],[23,14]],"раздражает":[[0,4],[2,3],[3,1],[5,1],[7,1],[8,1],[11,1],[12,1],[13,1],[17,1],[18,1],[19,1],[20,2],[22,1]],"здорово":[[0,1],[1,1],[2,1],[3,1],[4,2],[5,2],[6,2],[7,3],[8,2],[10,4],[11,2],[12,3],[13,5],[14,3],[15,3],[16,6],[17,1],[18,5],[19,3],[20,2],[21,2],[22,1],[23,1]],"спорт":[[0,18],[1,24],[2,20],[3,14],[4,18],[5,15],[6,19],[7,16],[8,17],[9,14],[10,15],[11,16],[12,26],[13,22],[14,15],[15,22],[16,15],[17,13],[18,14],[19,16],[20,15],[21,19],[22,19],[23,13]],"завтра":[[0,15],[1,13],[2,22],[3,16],[4,14],[5,11],[6,20],[7,10],[8,14],[9,19],[10,20],[11,23],[12,24],[13,20],[14,16],[15,27],[16,23],[17,26],[18,13],[19,17],[20,23],[21,27],[22,24],[23,19]],"море":[[0,16],[1,17],[2,14],[3,22],[4,17],[5,15],[6,13],[7,13],[8,15],[9,19],[10,18],[11,15],[12,17],[13,19],[14,19],[15,15],[16,17],[17,17],[18,23],[19,19],[20,20],[21,10],[22,25],[23,11]],"поход":[[0,17],[1,23],[2,14],[3,18],[4,18],[5,14],[6,7],[7,19],[8,22],[9,18],[10,16],[11,15],[12,16],[13,17],[14,16],[15,16],[16,18],[17,19],[18,18],[19,26],[20,15],[21,8],[22,27],[23,9]],"тревожно":[[0,2],[1,1],[2,2],[3,1],[6,1],[7,2],[8,1],[9,1],[10,1],[11,1],[13,1],[14,1],[15,1],[17,1],[20,1],[21,1],[22,1],[23,3]],"классно":[[0,1],[1,2],[2,1],[3,2],[4,2],[5,1],[6,2],[7,2],[8,1],[9,1],[10,5],[11,2],[12,3],[13,4],[14,2],[15,4],[16,1],[17,3],[18,1],[19,2],[20,3],[21,1],[22,4],[23,1]],"устал":[[0,3],[1,2],[2,2],[5,1],[7,1],[8,1],[11,1],[13,1],[16,2],[18,2],[20,1],[22,2],[23,1]],"страшно":[[0,1],[1,3],[2,2],[5,2],[7,1],[8,1],[10,2],[11,1],[13,1],[14,1],[15,1],[16,1],[18,4],[19,1],[21,2],[22,1],[23,1]],"бесит":[[0,2],[1,3],[2,1],[3,1],[5,1],[7,1],[11,3],[12,1],[13,1],[16,2],[19,2],[22,2],[23,1]],"круто":[[0,1],[1,1],[2,1],[3,1],[4,2],[5,3],[6,1],[8,3],[9,1],[10,1],[11,2],[12,2],[13,2],[14,3],[15,3],[16,8],[17,3],[18,2],[22,3]],"грустно":[[0,1],[1,6],[2,1],[3,2],[4,2],[5,1],[10,1],[12,1],[13,2],[14,1],[18,1],[20,1],[22,2],[23,4]],"люблю":[[1,2],[2,2],[4,1],[5,1],[6,2],[7,6],[8,2],[9,3],[10,3],[11,5],[12,7],[13,1],[14,2],[15,1],[16,4],[17,1],[18,6],[19,4],[20,4],[22,1]],"отлично":[[1,2],[2,1],[4,1],[5,3],[6,5],[7,4],[8,4],[9,2],[11,2],[12,4],[13,1],[14,3],[15,6],[16,2],[17,3],[18,3],[19,6],[20,3],[21,2],[22,2],[23,3]]},"rising":[{"w":"здорово","ratio":1.54,"spark":[35.94,55.946]},{"w":"отлично","ratio":1.47,"spark":[41.075,60.742]},{"w":"круто","ratio":1.41,"spark":[29.095,41.56]},{"w":"кайф","ratio":1.25,"spark":[39.363,49.552]},{"w":"завтра","ratio":1.23,"spark":[337.156,414.003]},{"w":"классно","ratio":1.22,"spark":[37.652,46.355]},{"w":"извини","ratio":1.2,"spark":[289.235,348.465]},{"w":"идея","ratio":1.2,"spark":[289.235,348.465]},{"w":"код","ratio":1.13,"spark":[304.638,343.67]},{"w":"горы","ratio":1.1,"spark":[337.156,372.442]},{"w":"музыка","ratio":1.09,"spark":[379.942,415.601]},{"w":"данные","ratio":1.08,"spark":[314.907,340.473]},{"w":"люблю","ratio":1.07,"spark":[46.209,49.552]},{"w":"кино","ratio":1.05,"spark":[340.578,358.056]},{"w":"ахаха","ratio":1.04,"spark":[304.638,318.095]},{"w":"книга","ratio":1.03,"spark":[333.733,345.269]},{"w":"фильм","ratio":1.03,"spark":[345.713,356.458]},{"w":"чай","ratio":1.02,"spark":[326.887,334.079]},{"w":"море","ratio":1.02,"spark":[332.021,338.875]},{"w":"привет","ratio":1.02,"spark":[332.021,337.276]},{"w":"работа","ratio":1.0,"spark":[330.31,330.882]},{"w":"отчет","ratio":1.01,"spark":[362.827,358.056]},{"w":"ужин","ratio":1.02,"spark":[330.31,322.89]},{"w":"встреча","ratio":1.03,"spark":[350.847,340.473]},{"w":"бег","ratio":1.04,"spark":[344.001,329.284]}],"dying":[{"w":"счастлив","ratio":2.1,"spark":[47.921,22.379]},{"w":"совет","ratio":1.37,"spark":[409.036,298.913]},{"w":"лодка","ratio":1.18,"spark":[376.519,318.095]},{"w":"пожалуйста","ratio":1.15,"spark":[332.021,289.322]},{"w":"как","ratio":1.13,"spark":[379.942,337.276]},{"w":"рад","ratio":1.12,"spark":[37.652,33.568]},{"w":"план","ratio":1.11,"spark":[349.136,314.898]},{"w":"проект","ratio":1.07,"spark":[347.424,326.087]},{"w":"спорт","ratio":1.06,"spark":[352.559,334.079]},{"w":"поход","ratio":1.05,"spark":[344.001,327.685]},{"w":"дела","ratio":1.05,"spark":[332.021,316.496]},{"w":"бег","ratio":1.04,"spark":[344.001,329.284]},{"w":"встреча","ratio":1.03,"spark":[350.847,340.473]},{"w":"ужин","ratio":1.02,"spark":[330.31,322.89]},{"w":"отчет","ratio":1.01,"spark":[362.827,358.056]},{"w":"работа","ratio":1.0,"spark":[330.31,330.882]},{"w":"привет","ratio":1.02,"spark":[332.021,337.276]},{"w":"море","ratio":1.02,"spark":[332.021,338.875]},{"w":"чай","ratio":1.02,"spark":[326.887,334.079]},{"w":"фильм","ratio":1.03,"spark":[345.713,356.458]},{"w":"книга","ratio":1.03,"spark":[333.733,345.269]},{"w":"ахаха","ratio":1.04,"spark":[304.638,318.095]},{"w":"кино","ratio":1.05,"spark":[340.578,358.056]},{"w":"люблю","ratio":1.07,"spark":[46.209,49.552]},{"w":"данные","ratio":1.08,"spark":[314.907,340.473]}],"meta":{"messages":1647,"tokens":12099,"minCount":10,"p1":"2024-01 — 2024-12","p2":"2025-01 — 2025-12","buffer":"—","examples":["работ*","спасибо, извини","люблю","думаю, чувствую"]}}</script>
+<script>
+(function () {
+  const DATA = JSON.parse(document.getElementById('data').textContent);
+  const months = DATA.months;
+  const totals = DATA.totals;
+  const vocab = DATA.vocab;
+  const vocabKeys = Object.keys(vocab).sort();
+  const COLORS = ['--series-1','--series-2','--series-3','--series-4','--series-5'];
+  const MAXQ = 5;
+
+  const css = name => getComputedStyle(document.querySelector('.viz-root')).getPropertyValue(name).trim();
+  const fmt = n => n >= 100 ? Math.round(n) : n >= 10 ? n.toFixed(1) : n.toFixed(2);
+
+  document.getElementById('subtitle').textContent =
+    `${DATA.meta.messages.toLocaleString('ru')} моих сообщений · ${DATA.meta.tokens.toLocaleString('ru')} слов · ` +
+    `${months[0]} — ${months[months.length-1]} · пересланные исключены`;
+  document.getElementById('bd-sub').textContent =
+    `Сравнение относительных частот: ${DATA.meta.p1} против ${DATA.meta.p2} (буферный ${DATA.meta.buffer} исключён). ` +
+    `Клик по слову добавляет его на график.`;
+  document.getElementById('foot').innerHTML =
+    `<b>Как читать:</b> частота нормирована на объём — «на 10 тыс. слов» за месяц. ` +
+    `Учитываются только униграммы (отдельные слова) без лемматизации: «лодка» и «лодки» — разные токены, ` +
+    `для суммирования словоформ используй звёздочку: <b>лодк*</b>. ` +
+    `В словарь вошли слова, встретившиеся ≥ ${DATA.meta.minCount} раз (${vocabKeys.length.toLocaleString('ru')} токенов). ` +
+    `Ссылки удалены до токенизации. Только собственные сообщения, обе выгрузки сверены; это описательная витрина (этап Д1), не выводы.`;
+
+  // ---- query resolution ----
+  function seriesFor(q) {
+    q = q.trim().toLowerCase().replace(/ё/g, 'е');
+    if (!q) return null;
+    const counts = new Array(months.length).fill(0);
+    let found = false;
+    if (q.endsWith('*')) {
+      const pre = q.slice(0, -1);
+      if (!pre) return null;
+      let lo = 0, hi = vocabKeys.length;
+      while (lo < hi) { const m = (lo + hi) >> 1; if (vocabKeys[m] < pre) lo = m + 1; else hi = m; }
+      for (let i = lo; i < vocabKeys.length && vocabKeys[i].startsWith(pre); i++) {
+        found = true;
+        for (const [mi, c] of vocab[vocabKeys[i]]) counts[mi] += c;
+      }
+    } else if (vocab[q]) {
+      found = true;
+      for (const [mi, c] of vocab[q]) counts[mi] += c;
+    }
+    if (!found) return { label: q, missing: true };
+    const rates = counts.map((c, i) => totals[i] > 0 ? c * 10000 / totals[i] : 0);
+    return { label: q, rates };
+  }
+
+  function smooth3(arr) {
+    return arr.map((v, i) => {
+      let s = v, n = 1;
+      if (i > 0) { s += arr[i-1]; n++; }
+      if (i < arr.length - 1) { s += arr[i+1]; n++; }
+      return s / n;
+    });
+  }
+
+  // ---- chart ----
+  const svg = document.getElementById('chart');
+  const box = document.getElementById('chartbox');
+  const tip = document.getElementById('tooltip');
+  const W = 960, H = 420, ML = 52, MR = 110, MT = 16, MB = 34;
+  let current = [];
+
+  function draw() {
+    const doSmooth = document.getElementById('smooth').checked;
+    const plotted = current.filter(s => !s.missing);
+    const shown = plotted.map(s => ({ ...s, v: doSmooth ? smooth3(s.rates) : s.rates }));
+    let ymax = 0;
+    for (const s of shown) for (const v of s.v) if (v > ymax) ymax = v;
+    if (ymax === 0) ymax = 1;
+    ymax *= 1.08;
+
+    const x = i => ML + (W - ML - MR) * (months.length <= 1 ? 0 : i / (months.length - 1));
+    const y = v => MT + (H - MT - MB) * (1 - v / ymax);
+
+    let el = '';
+    // y grid + ticks
+    const yticks = niceTicks(ymax, 5);
+    for (const t of yticks) {
+      el += `<line x1="${ML}" y1="${y(t)}" x2="${W-MR}" y2="${y(t)}" stroke="${css('--grid')}" stroke-width="1"/>`;
+      el += `<text x="${ML-8}" y="${y(t)+4}" text-anchor="end" font-size="11" fill="${css('--muted')}">${fmt(t)}</text>`;
+    }
+    // x ticks: January of each year
+    for (let i = 0; i < months.length; i++) {
+      if (months[i].endsWith('-01')) {
+        el += `<line x1="${x(i)}" y1="${H-MB}" x2="${x(i)}" y2="${H-MB+4}" stroke="${css('--baseline')}" stroke-width="1"/>`;
+        el += `<text x="${x(i)}" y="${H-MB+18}" text-anchor="middle" font-size="11" fill="${css('--muted')}">${months[i].slice(0,4)}</text>`;
+      }
+    }
+    // baseline
+    el += `<line x1="${ML}" y1="${H-MB}" x2="${W-MR}" y2="${H-MB}" stroke="${css('--baseline')}" stroke-width="1"/>`;
+    // y axis caption
+    el += `<text x="${ML-8}" y="${MT-2}" text-anchor="end" font-size="10" fill="${css('--muted')}">на 10 тыс. слов</text>`;
+
+    // lines
+    shown.forEach((s, si) => {
+      const col = css(COLORS[si % COLORS.length]);
+      let d = '';
+      s.v.forEach((v, i) => { d += (i === 0 ? 'M' : 'L') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); });
+      el += `<path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>`;
+    });
+
+    // direct labels at line ends, nudged apart
+    const ends = shown.map((s, si) => ({ label: s.label, yy: y(s.v[s.v.length-1]), si }))
+                      .sort((a, b) => a.yy - b.yy);
+    for (let i = 1; i < ends.length; i++)
+      if (ends[i].yy - ends[i-1].yy < 14) ends[i].yy = ends[i-1].yy + 14;
+    for (const e of ends) {
+      const col = css(COLORS[e.si % COLORS.length]);
+      el += `<circle cx="${W-MR+4}" cy="${e.yy}" r="3" fill="${col}"/>`;
+      el += `<text x="${W-MR+11}" y="${e.yy+4}" font-size="12" fill="${css('--text-secondary')}">${escapeHtml(e.label)}</text>`;
+    }
+
+    el += `<line id="cross" x1="0" y1="${MT}" x2="0" y2="${H-MB}" stroke="${css('--baseline')}" stroke-width="1" style="display:none"/>`;
+    svg.innerHTML = el;
+
+    // legend
+    const lg = document.getElementById('legend');
+    lg.innerHTML = '';
+    current.forEach((s, i) => {
+      const item = document.createElement('span');
+      item.className = 'item';
+      if (s.missing) {
+        item.innerHTML = `<span class="miss">«${escapeHtml(s.label)}» — нет данных (попробуй ${escapeHtml(s.label)}*)</span>`;
+      } else {
+        const si = plotted.indexOf(s);
+        item.innerHTML = `<span class="swatch" style="background:${css(COLORS[si % COLORS.length])}"></span>${escapeHtml(s.label)}`;
+      }
+      lg.appendChild(item);
+    });
+
+    svg.onmousemove = ev => {
+      if (!shown.length) return;
+      const r = svg.getBoundingClientRect();
+      const px = (ev.clientX - r.left) * W / r.width;
+      if (px < ML || px > W - MR) { hideTip(); return; }
+      const i = Math.round((px - ML) / (W - ML - MR) * (months.length - 1));
+      const cross = svg.querySelector('#cross');
+      cross.style.display = '';
+      cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i));
+      const rows = shown.map((s, si) => ({ si, label: s.label, v: s.v[i] }))
+                        .sort((a, b) => b.v - a.v)
+                        .map(rw => `<div class="trow"><span class="swatch" style="background:${css(COLORS[rw.si % COLORS.length])}"></span>` +
+                                   `<span>${escapeHtml(rw.label)}</span><span class="v">${fmt(rw.v)}</span></div>`)
+                        .join('');
+      tip.innerHTML = `<div class="tmonth">${months[i]}</div>${rows}`;
+      tip.style.display = 'block';
+      const bx = box.getBoundingClientRect();
+      let tx = (x(i) * r.width / W) + 14;
+      if (tx + tip.offsetWidth > bx.width - 4) tx = (x(i) * r.width / W) - tip.offsetWidth - 14;
+      tip.style.left = tx + 'px';
+      tip.style.top = Math.max(4, (ev.clientY - bx.top) - tip.offsetHeight - 12) + 'px';
+    };
+    svg.onmouseleave = hideTip;
+  }
+
+  function hideTip() {
+    tip.style.display = 'none';
+    const c = svg.querySelector('#cross');
+    if (c) c.style.display = 'none';
+  }
+
+  function niceTicks(max, n) {
+    const raw = max / n;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => max / s <= n) || mag * 10;
+    const out = [];
+    for (let t = step; t <= max; t += step) out.push(t);
+    return out;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function run() {
+    const qs = document.getElementById('q').value.split(',').map(s => s.trim()).filter(Boolean).slice(0, MAXQ);
+    current = qs.map(seriesFor).filter(Boolean);
+    draw();
+  }
+
+  document.getElementById('go').onclick = run;
+  document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+  document.getElementById('smooth').onchange = draw;
+  window.addEventListener('resize', draw);
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  if (mq.addEventListener) mq.addEventListener('change', draw);
+
+  // example chips
+  const chipbox = document.getElementById('chips');
+  for (const ex of DATA.meta.examples) {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = ex;
+    b.onclick = () => { document.getElementById('q').value = ex; run(); };
+    chipbox.appendChild(b);
+  }
+
+  // rising / dying lists
+  function sparkSvg(vals, color) {
+    const w = 72, h = 20, max = Math.max(...vals, 1e-9);
+    let d = '';
+    vals.forEach((v, i) => {
+      d += (i === 0 ? 'M' : 'L') + (2 + i * (w - 4) / (vals.length - 1)).toFixed(1) + ' ' +
+           (h - 2 - (h - 4) * v / max).toFixed(1);
+    });
+    return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><path d="${d}" fill="none" stroke="${color}" stroke-width="1.5"/></svg>`;
+  }
+  function renderList(id, items, cls) {
+    const root = document.getElementById(id);
+    items.forEach((it, i) => {
+      const row = document.createElement('div');
+      row.className = 'wrow ' + cls;
+      const col = cls === 'up' ? css('--up') : css('--down');
+      row.innerHTML = `<span class="rank">${i+1}</span>` +
+        `<span class="w" title="добавить на график">${escapeHtml(it.w)}</span>` +
+        sparkSvg(it.spark, col) +
+        `<span class="ratio">${it.ratio >= 100 ? '×' + Math.round(it.ratio) : '×' + it.ratio.toFixed(1)}</span>`;
+      row.querySelector('.w').onclick = () => {
+        const q = document.getElementById('q');
+        const parts = q.value.split(',').map(s => s.trim()).filter(Boolean);
+        if (!parts.includes(it.w)) parts.push(it.w);
+        q.value = parts.slice(-MAXQ).join(', ');
+        run();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+      root.appendChild(row);
+    });
+  }
+  renderList('rising', DATA.rising, 'up');
+  renderList('dying', DATA.dying, 'down');
+
+  run();
+})();
+</script>
+</body>
+</html>

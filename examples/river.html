@@ -1,0 +1,327 @@
+<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Река общения</title><style>
+body{margin:0;background:#0d0d0d;color:#fff;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+.wrap{max-width:1140px;margin:0 auto;padding:34px 18px 60px}
+h1{font-size:42px;margin:0 0 8px;letter-spacing:-.01em}
+.eyebrow{font-size:13px;color:#3987e5;text-transform:uppercase;letter-spacing:.22em;margin:0 0 10px}
+.big{font-size:16px;line-height:1.55;color:#c3c2b7;max-width:70ch;margin:0 0 8px}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px;align-items:center}
+.chip{font-size:13px;padding:5px 12px;border-radius:999px;border:1px solid #383835;color:#c3c2b7;cursor:pointer;background:transparent;display:flex;align-items:center;gap:7px}
+.chip .sw{width:10px;height:10px;border-radius:3px}
+.chip:hover{border-color:#898781;color:#fff}
+.chip.active{border-color:#fff;color:#fff;background:rgba(255,255,255,.06)}
+.chip.tool{border-color:#1c5cab;color:#86b6ef}
+.chip.tool.on{border-color:#3987e5;color:#fff;background:rgba(57,135,229,.12)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 8px;align-items:center}
+.tools input{background:#141413;border:1px solid #383835;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;width:230px}
+#riverbox{position:relative}
+#river{width:100%;height:auto;display:block}
+.stream{transition:opacity .5s ease}
+.stream.clickable{cursor:pointer}
+.dim{opacity:.13}
+.lift{opacity:1;filter:drop-shadow(0 0 10px rgba(255,255,255,.3))}
+#card{position:absolute;pointer-events:none;display:none;z-index:5;background:rgba(20,20,19,.96);
+ border:1px solid #383835;border-radius:12px;padding:12px 14px;max-width:330px;box-shadow:0 6px 24px rgba(0,0,0,.6);
+ transition:left .9s linear, top .5s ease}
+#card.jump{transition:none}
+#card .who{font-weight:700;font-size:14px}
+#card .when{color:#898781;font-size:12px;margin:2px 0 6px}
+#card .msg{font-size:13px;line-height:1.5;color:#c3c2b7;border-left:2px solid #383835;padding-left:9px;margin:7px 0;font-style:italic}
+#card .stat{font-size:12px;color:#898781}
+#cursorline{transition:transform 1.35s linear;pointer-events:none}
+.hint{font-size:13px;color:#898781;margin:8px 0 0}
+.foot{color:#52514e;font-size:12px;line-height:1.6;margin-top:20px;max-width:86ch}
+</style></head><body><div class="wrap">
+<p class="eyebrow">река общения · v3</p>
+<h1>Одиннадцать лет — одна река</h1>
+<p class="big">Клик по руслу — поток на передний план. Курсор вдоль течения — сообщения из
+прошлого. «Проплыть» — медленный сплав от истока. «Температура» красит выбранное русло
+эмоциональным балансом той поры: тёплое золото — светлые месяцы, холодная синь — тяжёлые.
+</p>
+<div class="legend" id="legend"></div>
+<div class="tools">
+<button class="chip tool" id="tempbtn">🌡 температура</button>
+<button class="chip tool" id="playbtn">▶ проплыть</button>
+<button class="chip tool" id="posterbtn">🖼 постер PNG</button>
+<input list="chatlist" id="chatpick" placeholder="добавить чат в реку…">
+<datalist id="chatlist"></datalist>
+</div>
+<div id="riverbox">
+<svg id="river" viewBox="0 0 1140 560"></svg>
+<div id="card"></div>
+</div>
+<p class="hint" id="status">Ничего не выбрано — кликни на течение.</p>
+<p class="foot">Все данные — локальные; цитаты в подсказках — только твои собственные сообщения.
+Температура — прозрачные эмо-словари по моим сообщениям в этом чате, нормировка на максимум
+русла. Сглаживание 3 мес. Селектор добавляет любой из топ-120 чатов (до 4 сразу).</p>
+</div>
+<script type="application/json" id="data">{"months":["2024-01","2024-02","2024-03","2024-04","2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12"],"series":[{"label":"Алекс","vals":[31.0,32.7,34.7,32.0,29.3,25.3,24.0,23.7,24.3,26.3,29.7,35.0,34.3,33.7,32.0,32.7,30.3,30.3,31.3,31.0,32.3,32.3,31.3,28.5],"raw":[26,36,36,32,28,28,20,24,27,22,30,37,38,28,35,33,30,28,33,33,27,37,33,24]},{"label":"Мария","vals":[25.0,24.7,22.7,20.0,20.0,20.3,24.0,21.7,22.7,21.7,24.0,21.7,21.0,19.7,21.0,21.3,21.7,21.7,21.0,22.3,20.0,23.7,25.3,31.0],"raw":[26,24,24,20,16,24,21,27,17,24,24,24,17,22,20,21,23,21,21,21,25,14,32,30]},{"label":"Илья","vals":[11.0,11.3,13.7,15.3,15.7,15.0,17.0,18.7,17.0,16.0,14.7,16.3,16.0,16.7,14.0,13.7,15.3,16.7,20.0,20.7,20.3,17.3,15.0,16.0],"raw":[13,9,12,20,14,13,18,20,18,13,17,14,18,16,16,10,15,21,14,25,23,13,16,16]},{"label":"остальные","vals":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"raw":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],"samples":{"0":{"0":["дела чай","как дела данные привет фильм как"],"1":["как отчет данные страшно","как отчет фильм бег бег код"],"2":["проект проект завтра кино музыка проект кино встреча совет отчет дела грустно","ужин спорт чай поход как совет план горы кино"],"3":["проект план кино море ахаха привет работа встреча кино встреча","ужин книга ужин завтра идея отчет"],"4":["план отчет фильм чай горы план бег работа музыка музыка горы грустно","привет лодка совет встреча счастлив"],"5":["ужин код ахаха","книга как музыка фильм встреча бег как поход музыка план фильм"],"6":["идея дела извини работа встреча данные извини","чай книга код книга фильм фильм код как встреча кайф"],"7":["работа музыка музыка идея отчет музыка спорт люблю","план проект ахаха музыка устал"],"8":["проект данные ужин дела","ужин идея"],"9":["как поход совет данные извини поход совет чай совет чай","отчет встреча кино лодка море пожалуйста"],"10":["спорт бег лодка кино отчет ахаха лодка","извини данные завтра совет спорт кино как совет лодка горы работа ахаха"],"11":["данные совет кино кайф","фильм работа горы план кайф"],"12":["музыка море фильм кино привет спорт ахаха","музыка ахаха проект"],"13":["привет пожалуйста","данные лодка идея музыка"],"14":["пожалуйста код фильм фильм извини привет пожалуйста код","ужин завтра план бег лодка фильм поход ужин извини совет море"],"15":["горы встреча","ахаха ужин ужин как план дела отчет совет идея горы отчет"],"16":["море чай спорт книга встреча работа дела работа код дела горы фильм","книга кино завтра данные музыка пожалуйста проект книга поход кино извини круто"],"17":["спорт совет поход книга данные горы","бег лодка фильм завтра"],"18":["проект дела отчет извини люблю","данные музыка море данные пожалуйста книга код"],"19":["кино музыка идея отчет привет спорт завтра план люблю","привет кино"],"20":["как отчет ужин","данные идея спорт пожалуйста совет лодка одиноко"],"21":["идея данные кино фильм горы отчет завтра идея кино кино","спорт как извини встреча завтра кино завтра поход завтра кино извини"],"22":["фильм пожалуйста лодка пожалуйста музыка привет данные","бег работа музыка фильм чай ужин идея"],"23":["привет ахаха встреча музыка код завтра пожалуйста работа море","бег проект проект проект отчет"]},"1":{"0":["лодка чай привет отчет ужин проект данные извини план спорт кино тоска","бег музыка музыка ужин ужин бег бег море привет кино"],"1":["чай ужин отчет бег совет как ахаха отчет совет грустно","чай чай тоска"],"2":["музыка книга кино музыка","встреча план совет ахаха как море пожалуйста лодка"],"3":["извини ужин лодка встреча кино код извини горы проект код грустно","ахаха спорт фильм фильм фильм"],"4":["спорт план музыка как музыка встреча","музыка совет отчет бег как совет план"],"5":["кино работа","как совет дела бег ахаха отчет ужин"],"6":["горы ужин идея чай отчет","совет идея работа музыка как совет пожалуйста книга счастлив"],"7":["чай отчет фильм чай работа привет извини море здорово","горы бег идея море совет проект встреча совет дела лодка бесит"],"8":["дела работа чай привет море","кино лодка отчет кино идея дела лодка спорт привет музыка поход"],"9":["музыка дела план горы отчет отчет дела горы совет данные план отчет","поход как план дела план завтра фильм завтра идея привет отчет пожалуйста"],"10":["лодка кино привет отчет","идея пожалуйста"],"11":["встреча чай спорт музыка море идея","ужин дела отчет привет завтра музыка привет пожалуйста работа ахаха отчет дела"],"12":["лодка поход план фильм отлично","код завтра встреча завтра извини классно"],"13":["ужин поход поход","пожалуйста пожалуйста лодка горы дела горы чай"],"14":["бег проект горы совет отлично","привет данные фильм музыка завтра ахаха кино дела бег музыка отчет завтра"],"15":["книга книга как план код проект бег","поход чай кино кино дела привет бег лодка ужин дела горы"],"16":["фильм музыка круто","совет извини"],"17":["кино ахаха встреча пожалуйста данные как круто","фильм книга кино море поход завтра классно"],"18":["извини завтра море здорово","привет извини данные идея отлично"],"19":["чай море горы горы как книга музыка отчет проект код план кайф","проект чай музыка поход дела извини работа отчет море работа ахаха извини"],"20":["ахаха отчет","фильм ужин проект"],"21":["план спорт код идея поход спорт ужин как спорт книга","привет музыка как ахаха книга встреча встреча проект совет музыка как отлично"],"22":["работа бег идея спорт работа извини чай завтра извини отчет код проект","ахаха код"],"23":["завтра книга книга чай чай книга бег пожалуйста встреча","как план море лодка встреча код спорт отлично"]},"2":{"0":["ужин как завтра привет код отчет фильм","встреча совет спорт книга завтра лодка план"],"1":["спорт ужин спорт спорт совет проект классно","как отчет завтра бег музыка бег код данные встреча как встреча фильм отлично"],"2":["проект идея рад","дела завтра бег лодка чай завтра ахаха люблю"],"3":["кино завтра кино лодка море классно","книга встреча"],"4":["поход лодка встреча извини привет как дела извини идея","лодка завтра проект завтра план проект счастлив"],"5":["бег фильм встреча отчет идея данные работа кино идея чай","встреча код бег горы спорт музыка план как работа книга пожалуйста работа кайф"],"6":["как книга фильм проект совет встреча отлично","музыка спорт завтра идея совет встреча лодка совет код идея"],"7":["море код совет","код бег план данные данные чай чай код как пожалуйста совет"],"8":["горы код страшно","дела проект привет поход как чай поход дела отлично"],"9":["поход отчет ахаха идея горы идея привет ахаха совет горы","совет поход кино ужин данные завтра"],"10":["дела музыка завтра музыка фильм работа работа музыка кайф","бег ужин встреча дела совет код завтра встреча лодка встреча извини как здорово"],"11":["ахаха данные","работа ужин бег музыка ужин чай поход чай совет проект спорт привет"],"12":["отчет книга идея ужин извини привет встреча рад","книга ахаха идея завтра извини спорт"],"13":["бег встреча книга завтра отчет пожалуйста море проект море совет проект привет","чай поход книга поход проект как музыка фильм завтра завтра"],"14":["ахаха извини книга бег проект горы проект лодка идея идея лодка здорово","кино извини фильм работа книга книга план встреча ахаха лодка музыка здорово"],"15":["как фильм совет проект фильм отчет дела бег море море встреча","спорт ужин море море чай музыка план встреча спорт книга дела спорт"],"16":["пожалуйста море фильм отчет музыка привет данные работа кино как","ахаха кино пожалуйста привет данные книга поход работа книга как пожалуйста"],"17":["чай поход план данные идея извини бег","горы дела идея совет работа море извини проект фильм горы как"],"18":["море кино горы музыка совет совет код дела проект ахаха море","извини отчет отчет совет отчет"],"19":["пожалуйста встреча музыка фильм код горы как завтра бег","данные отчет отчет план работа книга ужин"],"20":["кино отчет горы идея дела дела план завтра ужин бег отлично","кино спорт море"],"21":["завтра встреча извини спорт тревожно","ужин спорт код поход море горы спорт ахаха"],"22":["встреча горы лодка книга кино бесит","пожалуйста идея поход дела"],"23":["код море кино ахаха встреча бег проект встреча","море код бег"]}},"origins":{"0":{"m":0,"text":"дела чай"},"1":{"m":0,"text":"лодка чай привет отчет ужин проект данные извини план спорт кино тоска"},"2":{"m":0,"text":"ужин как завтра привет код отчет фильм"}},"temps":{"0":[-0.14,-0.25,-0.25,-0.03,0.19,0.41,0.44,0.53,0.41,0.44,0.53,0.88,0.82,0.72,0.72,0.88,1.0,0.69,0.62,0.53,0.5,0.38,0.06,-0.05],"1":[-0.79,-0.58,-0.42,-0.05,0.16,0.68,0.84,0.68,0.53,0.47,0.74,0.79,0.68,0.84,0.89,1.0,0.63,0.74,0.79,0.89,0.58,0.37,-0.05,-0.24],"2":[-0.35,-0.24,0.0,0.47,0.65,0.94,0.88,1.0,0.71,0.41,0.35,0.53,0.76,0.76,0.59,0.53,0.47,0.59,0.59,0.65,0.35,0.06,-0.24,-0.18]},"extra":[],"eras":[],"events":[],"colors":["#3987e5","#d95926","#199e70","#c98500","#d55181","#00a300","#9085e9","#e66767","#4a4a47"],"extraColors":["#52c7d8","#b8a1ff","#8fd14f","#ff9d9d"]}</script>
+<script>
+const D = JSON.parse(document.getElementById('data').textContent);
+const N = D.months.length;
+const W = 1140, H = 560, ML = 16, MR = 16, MT = 46, MB = 30;
+const X = i => ML + (W-ML-MR) * i / (N-1);
+const svg = document.getElementById('river');
+const card = document.getElementById('card');
+const box = document.getElementById('riverbox');
+const statusEl = document.getElementById('status');
+let selected = null, playTimer = null, tempOn = false, evOn = true;
+let added = [];   // индексы в D.extra
+
+function activeSeries(){
+  const extras = added.map((ei,j)=>({...D.extra[ei], color:D.extraColors[j%D.extraColors.length], extra:true}));
+  const base = D.series.map((s,k)=>({...s, color:D.colors[k], k}));
+  return [...base.slice(0,-1), ...extras, base[base.length-1]];
+}
+let AS = activeSeries();
+
+function recompute(){
+  AS = activeSeries();
+  const S = AS.length;
+  const sums = Array.from({length:N},(_,i)=>AS.reduce((a,s)=>a+s.vals[i],0));
+  const vmax = Math.max(...sums);
+  const Y = v => H/2 - v * (H-MT-MB) / vmax;
+  const base = sums.map(v=>-v/2);
+  const lo=[], hi=[];
+  let cum = base.slice();
+  for (let k=0;k<S;k++){ lo.push(cum.slice()); cum = cum.map((v,i)=>v+AS[k].vals[i]); hi.push(cum.slice()); }
+  return {S, sums, Y, lo, hi};
+}
+let G = recompute();
+
+function catmull(pts){
+  if (pts.length<3) return 'M'+pts.map(p=>p[0]+' '+p[1]).join('L');
+  let d = 'M'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1);
+  for (let i=0;i<pts.length-1;i++){
+    const p0=pts[Math.max(0,i-1)], p1=pts[i], p2=pts[i+1], p3=pts[Math.min(pts.length-1,i+2)];
+    d += 'C'+(p1[0]+(p2[0]-p0[0])/6).toFixed(1)+' '+(p1[1]+(p2[1]-p0[1])/6).toFixed(1)+' '
+           +(p2[0]-(p3[0]-p1[0])/6).toFixed(1)+' '+(p2[1]-(p3[1]-p1[1])/6).toFixed(1)+' '
+           +p2[0].toFixed(1)+' '+p2[1].toFixed(1);
+  }
+  return d;
+}
+
+function tempColor(t){ // t ∈ [-1,1]: холод → тепло
+  const cold=[77,157,255], warm=[255,176,77], mid=[107,106,102];
+  const a = t<0?cold:warm, f=Math.abs(t);
+  const c = a.map((x,j)=>Math.round(mid[j]+(x-mid[j])*f));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+function svgBody(inlineOpacity){
+  const {S, sums, Y, lo, hi} = G;
+  let defs = '', el = '';
+  if (tempOn && selected!=null && !AS[selected].extra && D.temps[AS[selected].k]!==undefined){
+    const t = D.temps[AS[selected].k];
+    let stops = '';
+    for (let i=0;i<N;i+=2)
+      stops += `<stop offset="${(i/(N-1)*100).toFixed(1)}%" stop-color="${tempColor(t[i])}"/>`;
+    defs = `<defs><linearGradient id="temp" x1="0" x2="1" y1="0" y2="0">${stops}</linearGradient></defs>`;
+  }
+  for (const e of D.eras){
+    const xm=(X(e.a)+X(e.b))/2;
+    el += `<line x1="${X(e.a).toFixed(1)}" y1="${MT-8}" x2="${X(e.a).toFixed(1)}" y2="${H-MB}" stroke="#2c2c2a"/>`;
+    el += `<text x="${xm.toFixed(0)}" y="${MT-18}" text-anchor="middle" font-size="10.5" fill="#6b6a66" transform="rotate(-20 ${xm.toFixed(0)} ${MT-18})">${e.label}</text>`;
+  }
+  for (let k=0;k<S;k++){
+    const top = hi[k].map((v,i)=>[X(i),Y(v)]);
+    const bot = lo[k].map((v,i)=>[X(i),Y(v)]).reverse();
+    const d = catmull(top)+catmull(bot).replace(/^M/,'L')+'Z';
+    const isSel = selected===k;
+    const fill = (isSel && tempOn && defs) ? 'url(#temp)' : AS[k].color;
+    let attrs = `class="stream clickable${selected==null?'':(isSel?' lift':' dim')}" data-k="${k}"`;
+    if (inlineOpacity) attrs = `fill-opacity="${selected==null?1:(isSel?1:0.13)}"`;
+    el += `<path ${attrs} d="${d}" fill="${fill}" stroke="#0d0d0d" stroke-width="0.8"/>`;
+  }
+  for (let k=0;k<S-1;k++){
+    if (selected!=null && selected!==k) continue;
+    const v = AS[k].vals;
+    let pi=0; v.forEach((x,i)=>{ if(x>v[pi]) pi=i; });
+    if (v[pi]/Math.max(1,sums[pi]) < 0.12 && selected!==k) continue;
+    const ym = (Y(lo[k][pi])+Y(hi[k][pi]))/2;
+    el += `<text x="${X(pi).toFixed(0)}" y="${ym.toFixed(0)}" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" style="text-shadow:0 0 8px rgba(0,0,0,.9);pointer-events:none">${AS[k].label}</text>`;
+  }
+  if (selected!=null && !AS[selected].extra && D.origins[AS[selected].k]){
+    const o = D.origins[AS[selected].k];
+    const yo = (Y(lo[selected][o.m])+Y(hi[selected][o.m]))/2;
+    el += `<circle cx="${X(o.m).toFixed(1)}" cy="${yo.toFixed(1)}" r="5" fill="#fff" style="pointer-events:none"/>`;
+  }
+  if (evOn) D.events.forEach((ev,ei)=>{
+    const yShore = Y(-sums[ev.m]/2)+14;
+    el += `<g class="evflag" data-ev="${ei}" style="cursor:pointer">`+
+          `<circle cx="${X(ev.m).toFixed(1)}" cy="${yShore-4}" r="14" fill="transparent"/>`+
+          `<line x1="${X(ev.m).toFixed(1)}" y1="${yShore-10}" x2="${X(ev.m).toFixed(1)}" y2="${yShore+4}" stroke="#c3c2b7" stroke-width="1"/>`+
+          `<path d="M${X(ev.m).toFixed(1)} ${yShore-10} l9 3.5 l-9 3.5Z" fill="#c3c2b7"/></g>`;
+  });
+  for (let i=0;i<N;i++)
+    if (D.months[i].endsWith('-01') && +D.months[i].slice(0,4)%2===0)
+      el += `<text x="${X(i).toFixed(0)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#898781">${D.months[i].slice(0,4)}</text>`;
+  return defs+el;
+}
+
+function draw(){
+  svg.innerHTML = svgBody(false) +
+    `<rect id="cursorline" x="0" y="${MT}" width="1.2" height="${H-MT-MB}" fill="#fff" opacity="0"/>`;
+  svg.querySelectorAll('.stream').forEach(p=>{
+    p.addEventListener('click', ev=>{ ev.stopPropagation(); select(+p.dataset.k===selected?null:+p.dataset.k); });
+  });
+  svg.querySelectorAll('.evflag').forEach(g=>{
+    const ev = D.events[+g.dataset.ev];
+    g.addEventListener('mouseenter', e=>{
+      if (playTimer) return;
+      card.classList.add('jump');
+      card.innerHTML = `<div class="who" style="color:#c3c2b7">⚑ ${ev.label}</div>`+
+        `<div class="when">${MRU[D.months[ev.m].slice(5)]} ${D.months[ev.m].slice(0,4)}</div>`;
+      card.style.display='block';
+      const r = box.getBoundingClientRect();
+      let tx = e.clientX - r.left + 16;
+      if (tx + 340 > r.width) tx = e.clientX - r.left - 348;
+      card.style.left = tx+'px';
+      card.style.top = (e.clientY - r.top - 70)+'px';
+      e.stopPropagation();
+    });
+    g.addEventListener('mousemove', e=>e.stopPropagation());
+    g.addEventListener('mouseleave', ()=>{ if(!playTimer) card.style.display='none'; });
+    g.addEventListener('click', e=>e.stopPropagation());
+  });
+}
+
+const MRU={'01':'январь','02':'февраль','03':'март','04':'апрель','05':'май','06':'июнь','07':'июль','08':'август','09':'сентябрь','10':'октябрь','11':'ноябрь','12':'декабрь'};
+function showCard(k,i,px,py,jump){
+  const s = AS[k], mm = D.months[i];
+  let msgs='';
+  if (!s.extra){
+    const smp=(D.samples[s.k]||{})[i];
+    if (smp) for (const t of smp) msgs+=`<div class="msg">«${t.replace(/</g,'&lt;')}»</div>`;
+    else if (k<G.S-1) msgs='<div class="stat" style="margin-top:6px">в этом месяце тишина</div>';
+  } else msgs='<div class="stat" style="margin-top:6px">цитаты доступны для топ-8</div>';
+  const share = G.sums[i]?Math.round(s.vals[i]*100/G.sums[i]):0;
+  card.classList.toggle('jump', !!jump);
+  card.innerHTML = `<div class="who" style="color:${s.color}">${s.label}</div>`+
+    `<div class="when">${MRU[mm.slice(5)]} ${mm.slice(0,4)}</div>`+
+    `<div class="stat">${s.raw[i]} сообщ. · ${share}% моего месяца</div>`+msgs;
+  card.style.display='block';
+  const r = box.getBoundingClientRect();
+  let tx = px - r.left + 18;
+  if (tx + 340 > r.width) tx = px - r.left - 348;
+  card.style.left = tx+'px';
+  card.style.top = Math.max(4, py - r.top - card.offsetHeight - 14)+'px';
+}
+
+function moveCursor(i, slow){
+  const cur = svg.querySelector('#cursorline');
+  cur.style.transition = slow ? 'transform 1.35s linear' : 'none';
+  cur.setAttribute('opacity', '0.4');
+  cur.style.transform = `translateX(${X(i)}px)`;
+}
+
+svg.addEventListener('mousemove', ev=>{
+  if (playTimer) return;
+  const r = svg.getBoundingClientRect();
+  const px = (ev.clientX-r.left)*W/r.width;
+  if (px<ML||px>W-MR){ card.style.display='none'; return; }
+  const i = Math.round((px-ML)/(W-ML-MR)*(N-1));
+  moveCursor(i,false);
+  let k = selected;
+  if (k==null){
+    const t = ev.target.closest('.stream');
+    if (!t){ card.style.display='none'; return; }
+    k = +t.dataset.k;
+  }
+  showCard(k,i,ev.clientX,ev.clientY,true);
+});
+svg.addEventListener('mouseleave', ()=>{ if(!playTimer){ card.style.display='none';
+  const c=svg.querySelector('#cursorline'); if(c) c.setAttribute('opacity','0'); }});
+svg.addEventListener('click', ()=>{ if(selected!=null) select(null); });
+
+function select(k){
+  stopPlay(); selected = k; draw(); renderLegend();
+  if (k==null) statusEl.textContent='Ничего не выбрано — кликни на течение.';
+  else {
+    const s=AS[k], total=s.raw.reduce((a,b)=>a+b,0);
+    const o=!s.extra && D.origins[s.k];
+    statusEl.textContent = `${s.label}: ${total.toLocaleString('ru')} моих сообщений`+
+      (o?` · исток ${D.months[o.m]}: «${o.text}»`:'');
+  }
+}
+
+function renderLegend(){
+  const lg=document.getElementById('legend'); lg.innerHTML='';
+  AS.forEach((s,k)=>{
+    const b=document.createElement('button');
+    b.className='chip'+(selected===k?' active':'');
+    b.innerHTML=`<span class="sw" style="background:${s.color}"></span>${s.label}`+(s.extra?' ✕':'');
+    b.onclick=()=>{ if(s.extra && selected===k){ removeExtra(k); } else select(selected===k?null:k); };
+    if (s.extra) b.title='повторный клик при выбранном — убрать из реки';
+    lg.appendChild(b);
+  });
+  document.getElementById('tempbtn').className='chip tool'+(tempOn?' on':'');
+  
+  document.getElementById('playbtn').textContent = playTimer?'■ стоп':'▶ проплыть';
+}
+
+function removeExtra(k){
+  const j = k - (D.series.length-1);
+  added.splice(j,1); selected=null; G=recompute(); draw(); renderLegend();
+}
+
+document.getElementById('tempbtn').onclick=()=>{ tempOn=!tempOn; draw(); renderLegend(); };
+
+
+const dl=document.getElementById('chatlist');
+D.extra.forEach((s,ei)=>{ const o=document.createElement('option'); o.value=s.label; dl.appendChild(o); });
+document.getElementById('chatpick').addEventListener('change', ev=>{
+  const ei = D.extra.findIndex(s=>s.label===ev.target.value);
+  if (ei<0 || added.includes(ei)) return;
+  if (added.length>=4){ statusEl.textContent='Не больше четырёх дополнительных русел — сними какое-нибудь.'; return; }
+  added.push(ei); ev.target.value='';
+  G=recompute(); draw(); renderLegend();
+  select(D.series.length-1+added.length-1);
+});
+
+function stopPlay(){ if(playTimer){ clearInterval(playTimer); playTimer=null;
+  const b=document.getElementById('playbtn'); if(b) b.textContent='▶ проплыть'; }}
+document.getElementById('playbtn').onclick=()=>{
+  if (playTimer){ stopPlay(); return; }
+  if (selected==null){ statusEl.textContent='Сначала выбери течение — потом поплывём.'; return; }
+  const k=selected, idx=[];
+  for (let i=0;i<N;i++) if (AS[k].raw[i]>0) idx.push(i);
+  if (!idx.length) return;
+  let j=0;
+  document.getElementById('playbtn').textContent='■ стоп';
+  const step=()=>{
+    if (j>=idx.length){ stopPlay(); return; }
+    const i=idx[j++];
+    moveCursor(i,true);
+    const r=svg.getBoundingClientRect();
+    showCard(k,i, r.left+(X(i)/W)*r.width, r.top+r.height*0.32, false);
+  };
+  step();
+  playTimer=setInterval(step, 1500);
+};
+
+document.getElementById('posterbtn').onclick=()=>{
+  const body = svgBody(true);
+  const title = selected!=null ? AS[selected].label+' · река общения' : 'Река общения';
+  const full = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H+90}">`+
+    `<rect width="${W}" height="${H+90}" fill="#0d0d0d"/>`+
+    `<text x="24" y="40" font-family="system-ui,sans-serif" font-size="26" font-weight="700" fill="#fff">${title}</text>`+
+    `<text x="24" y="62" font-family="system-ui,sans-serif" font-size="13" fill="#898781">1 112 331 сообщение · 2016–2026</text>`+
+    `<g transform="translate(0,80)">${body.replace(/class="[^"]*"/g,'')}</g></svg>`;
+  const img = new Image();
+  img.onload = ()=>{
+    const c = document.createElement('canvas');
+    c.width = W*2; c.height = (H+90)*2;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img,0,0,c.width,c.height);
+    const a = document.createElement('a');
+    a.download = 'reka-obshcheniya.png';
+    a.href = c.toDataURL('image/png');
+    a.click();
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(full);
+};
+
+draw(); renderLegend();
+</script></body></html>
