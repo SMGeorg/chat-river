@@ -9,8 +9,14 @@
 Нужен LM Studio (lmstudio.ai) с моделью gemma-3-12b-it (≈8 ГБ; на ней промпт
 валидирован автором: κ≈0.53 против ручной разметки — умеренная согласованность,
 потолок одиночного кодировщика) и включённым Local Server. Скрипт сам найдёт модель.
-Скорость на Mac M-серии с 16 ГБ: ~0.5–1.5 сообщ/с → 10 тыс. сообщений за вечер,
-100 тыс. — сутки-трое чистой работы. Чекпоинт после каждого ответа: прерывай и
+
+Скорость и нагрузка — выбираются флагами:
+  --workers N   параллельные запросы (локальный дефолт 1 — бережно к машине)
+  --pause S     пауза между запросами, сек (локальный дефолт 0.2)
+Бережный дефолт (1 поток, пауза 0.2 c) на Mac M-серии с 16 ГБ даёт ~0.5–1.5 сообщ/с:
+10 тыс. сообщений за вечер, 100 тыс. — сутки-трое. Мощная машина (32+ ГБ, десктопный
+GPU)? Пробуй `--workers 4 --pause 0` — в разы быстрее; если LM Studio начнёт
+таймаутить, вернись к меньшему. Чекпоинт после каждого ответа: прерывай и
 перезапускай сколько угодно — удобно гонять ночами по частям.
 
 УРОВЕНЬ 3 — облако (быстро: 5–12 сообщ/с, ~$2–4 за 100 тыс. сообщений;
@@ -20,9 +26,12 @@
   export CHATRIVER_LLM_MODEL="google/gemma-3-12b-it"
   export CHATRIVER_LLM_KEY="sk-or-..."
   python scripts/05_annotate_llm.py
-При заданном ключе запросы идут в 8 параллельных потоков (CHATRIVER_LLM_WORKERS).
+При заданном ключе дефолты сами переключаются на 8 потоков без пауз.
 Совет: в настройках OpenRouter (Privacy) запрети провайдеров, обучающихся на данных,
 а ключ сделай временным и отзови после прогона.
+
+Те же настройки доступны и переменными окружения (CHATRIVER_LLM_WORKERS,
+CHATRIVER_LLM_PAUSE); флаг командной строки сильнее переменной.
 
 Демо-режим (без LLM, суррогат по словарям + шум — ТОЛЬКО для примера):
   python scripts/05_annotate_llm.py --synthetic
@@ -46,8 +55,23 @@ RAW = DATA / "llm-valence-raw.jsonl"
 URL = os.environ.get("CHATRIVER_LLM_URL", "http://127.0.0.1:1234/v1/chat/completions")
 MODEL = os.environ.get("CHATRIVER_LLM_MODEL", "")
 KEY = os.environ.get("CHATRIVER_LLM_KEY", "")
-PAUSE = float(os.environ.get("CHATRIVER_LLM_PAUSE", "0" if not KEY else "0"))
-WORKERS = int(os.environ.get("CHATRIVER_LLM_WORKERS", "8" if KEY else "4"))
+
+
+def _arg(name, default):
+    """--name значение из командной строки; иначе переменная окружения; иначе дефолт."""
+    if name in sys.argv:
+        i = sys.argv.index(name)
+        if i + 1 < len(sys.argv):
+            return sys.argv[i + 1]
+    env = "CHATRIVER_LLM_" + name.lstrip("-").upper()
+    return os.environ.get(env, default)
+
+
+# бережные локальные дефолты (1 поток, пауза 0.2 с — не душить LM Studio);
+# облако по ключу само переключается на 8 потоков без пауз;
+# мощная машина локально: --workers 4 --pause 0
+PAUSE = float(_arg("--pause", "0" if KEY else "0.2"))
+WORKERS = int(_arg("--workers", "8" if KEY else "1"))
 EMO = [
     "радость",
     "доверие",
