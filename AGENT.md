@@ -29,7 +29,8 @@ Telegram. Пакет уже содержит весь код. Твоя рабо�
 
 1. **Покажи, что он получит.** В папке `examples/` лежат готовые страницы, собранные
    из полностью синтетического корпуса: открой пользователю `examples/river.html`,
-   `examples/emo-arc.html`, `examples/ngram-viewer.html`, `examples/big5.html` —
+   `examples/emo-arc.html`, `examples/weak-ties.html`, `examples/ngram-viewer.html`,
+   `examples/big5.html` —
    «вот это будет про тебя». Данные там вымышленные, смотреть можно свободно.
 
 2. **Дай выбрать уровень обработки** (таблица «Три уровня» в README — покажи её):
@@ -66,6 +67,7 @@ Telegram. Пакет уже содержит весь код. Твоя рабо�
    - `python3 scripts/02_ngram.py`
    - `python3 scripts/03_river.py`
    - `python3 scripts/04_big5.py`
+   - `python3 scripts/07_weak_ties.py` (слабые связи — работает и без LLM-шага)
    Для Big5: если пользователь хочет полное сопоставление — попроси его пройти
    bigfive-test.com, скопировать `templates/big5-results-template.md` в `my_big5.md`
    в корне пакета и вписать баллы, потом перезапусти шаг.
@@ -87,7 +89,7 @@ Telegram. Пакет уже содержит весь код. Твоя рабо�
    - Затем: `python3 scripts/06_emo_arc.py`.
 
 8. **Финал.** Скажи пользователю открыть из `out/`: `ngram-viewer.html`, `river.html`,
-   `big5.html`, `emo-arc.html` (если делали шаг 7). Кратко объясни, что где (описания —
+   `big5.html`, `weak-ties.html`, `emo-arc.html` (если делали шаг 7). Кратко объясни, что где (описания —
    в README). Напомни: страницы содержат его цитаты и имена чатов — делиться ими
    стоит осознанно.
 
